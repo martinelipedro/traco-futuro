@@ -12,7 +12,11 @@ sem backend Python, API externa ou envio dos desenhos do usuário.
 
 Gato, peixe, flor, casa, árvore, guarda-chuva, cachorro, tubarão, castelo, cacto,
 carro e bicicleta. Você pode desenhar ou escolher um exemplo, revelar os traços
-em segundos, acompanhar as hipóteses e pedir possíveis continuações.
+em segundos ou ponto a ponto, acompanhar as hipóteses e pedir possíveis continuações.
+O botão **Rever meu desenho ponto a ponto** também funciona com o seu próprio rabisco.
+Há pausa, avanço de um evento e ritmos de 0,6/0,3/0,15 s por ponto, além do tempo
+original. O relógio e o gráfico mantêm os timestamps originais. A sugestão também
+aparece gradualmente; **Mostrar tudo** pula essa reprodução.
 
 ## Resultados
 
@@ -35,14 +39,25 @@ diretamente comparáveis com este problema de doze classes e teste novo.
 
 ## Continuações: extensão experimental
 
-- **Com referência do treino:** adapta a continuação de um exemplo conhecido.
-  Pode encaixar mal ou sugerir uma forma diferente da intenção do usuário.
+- **Com referência do treino:** busca entre 4.800 exemplos conhecidos (400
+  por categoria). Compara traços por comprimento de arco, alinha o prefixo inteiro
+  e usa o estado da GRU para desempatar os melhores encaixes. Ajusta a junção,
+  evita repetir tinta já observada e recusa encaixes pouco confiáveis. Ainda pode
+  sugerir uma forma diferente da intenção do usuário.
 - **Geração livre da GRU:** amostra movimentos e estados da caneta; pode deformar
   desenhos e acumular erros. Ela não prevê durações futuras: o relógio realimentado
   usa o intervalo mediano positivo observado no prefixo.
 
 As métricas acima medem reconhecimento, não a qualidade das continuações.
 O modo por referência e a geração livre são identificados separadamente.
+
+Na revisão da continuação, usamos 262 prefixos de 144 desenhos de validação, com
+categoria verdadeira fixada. Em 247 casos aceitos por ambas as versões, a distância
+Chamfer normalizada da tinta futura caiu de 0,163 para 0,115; houve 15 recusas na
+versão nova. A comparação muda biblioteca e encaixe juntos, exclui recusas da
+média e não mede qualidade perceptual nem desempenho com categoria automática.
+O relatório apresenta o protocolo e os limites; o classificador e a geração livre
+não foram retreinados nesta revisão.
 
 ## Abrir e verificar localmente
 
