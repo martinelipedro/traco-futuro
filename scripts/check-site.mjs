@@ -34,16 +34,21 @@ const read=name=>JSON.parse(fs.readFileSync(path.join(directory,name),'utf8'));
 const data=read('model.json'),model=new SketchModel(data),library=read('reference_library.json'),examples=read('examples.json'),metrics=read('metrics.json');
 assert.equal(data.classes.length,data.labels.length);
 assert.equal(data.weights['gru.weight_ih_l0'].length,3*data.hidden);
-assert.ok(data.weights['gru.weight_ih_l0'].every(row=>row.length===5));
+assert.ok(data.weights['gru.weight_ih_l0'].every(row=>row.length===(data.input_size??5)));
 assert.equal(data.weights['classifier.weight'].length,data.classes.length);
 assert.ok(library.drawings.length>0&&examples.length>0);
 for(const drawing of library.drawings){
   assert.ok(Number.isInteger(drawing.label)&&drawing.label>=0&&drawing.label<data.classes.length);
   for(const prefix of drawing.prefixes){assert.equal(prefix.hidden.length,data.hidden);assert.ok(prefix.length>0&&prefix.length<drawing.points.length);}
 }
-for(const example of examples){assert.equal(example.tokens.length,example.points.length);assert.ok(example.tokens.length>0&&example.tokens.every(t=>t.length===5&&t.every(Number.isFinite)));}
+for(const example of examples){assert.equal(example.tokens.length,example.points.length);assert.ok(example.tokens.length>0&&example.tokens.every(t=>t.length===(data.input_size??5)&&t.every(Number.isFinite)));}
 const p=model.prefix(examples[0].tokens.slice(0,12)).probabilities;
 assert.ok(p.every(Number.isFinite));assert.ok(Math.abs(p.reduce((a,b)=>a+b,0)-1)<1e-8);
-assert.ok(metrics.accuracy>=0&&metrics.accuracy<=1&&metrics.half_accuracy>=0&&metrics.half_accuracy<=1);
+const early=metrics.early_accuracy??metrics.half_accuracy;
+assert.ok(metrics.accuracy>=0&&metrics.accuracy<=1);assert.ok(early==null||(early>=0&&early<=1));
+if(data.include_time){
+  assert.equal(data.input_size,6);assert.deepEqual(data.evaluation_seconds,[2,4,6]);
+  for(const e of examples){let previous=0;for(let i=0;i<e.points.length;i++){const t=e.points[i][3];assert.ok(Number.isFinite(t)&&t>=previous);assert.ok(Math.abs(Math.expm1(e.tokens[i][5])*data.time_scale-(t-previous))<1e-4);previous=t;}}
+}
 assert.ok(fs.readFileSync(path.join(directory,'relatorio.pdf')).subarray(0,5).equals(Buffer.from('%PDF-')));
 console.log(JSON.stringify({passed:true,files,bytes,categories:data.classes.length,references:library.drawings.length,relative_assets:true,backend_required:false}));

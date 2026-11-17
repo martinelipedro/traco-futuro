@@ -1,65 +1,78 @@
-# Traço Futuro
+# Traço Futuro — classificação temporal com GRU
 
-Reconhecimento progressivo e continuação de desenhos com GRU, usando dados do
-Quick, Draw!. O aplicativo executa a inferência no navegador, sem backend Python
-ou API de IA. Pesos, exemplos e relatório PDF já acompanham `dist/`.
+[**Abrir aplicativo**](https://martinelipedro.github.io/traco-futuro/) ·
+[Relatório PDF](https://martinelipedro.github.io/traco-futuro/relatorio.pdf)
 
-## Usar
+Reconhecimento progressivo de desenhos em uma série temporal multivariada de
+amostragem irregular. O modelo usa deslocamentos, posições relativas, estado
+da caneta e os intervalos de tempo originais. A inferência roda no navegador,
+sem backend Python, API externa ou envio dos desenhos do usuário.
 
-- Desenhe ou escolha um exemplo e revele os traços aos poucos.
-- Acompanhe as hipóteses e as curvas de probabilidade.
-- Escolha uma categoria e peça uma continuação.
-- Compare com o original e experimente outras possibilidades.
+## Doze categorias
 
-O recorte contém gato, peixe, flor, casa, árvore e guarda-chuva.
+Gato, peixe, flor, casa, árvore, guarda-chuva, cachorro, tubarão, castelo, cacto,
+carro e bicicleta. Você pode desenhar ou escolher um exemplo, revelar os traços
+em segundos, acompanhar as hipóteses e pedir possíveis continuações.
 
-## Resultados e limitações
+## Resultados
 
-A acurácia média entre duas seeds é **89,4% com desenhos completos** e **82,8% com
-metade dos eventos**, em 1.500 desenhos de teste. O aplicativo usa a seed 42.
-Esses números medem reconhecimento; não medem a qualidade de completar desenhos.
+São 30 mil desenhos balanceados: 24 mil de treino, 3 mil de validação e 3 mil
+novos de teste. Médias de duas seeds; o aplicativo usa a seed 42.
+
+| Observações disponíveis | Acurácia — todos | Acurácia — ainda em andamento | n em andamento |
+|---|---:|---:|---:|
+| Primeiros 2 s | 66,7% | 66,5% | 2.953 |
+| Primeiros 4 s | 79,8% | 78,1% | 2.552 |
+| Primeiros 6 s | 83,6% | 79,2% | 1.772 |
+| Desenho completo | 86,7% | — | — |
+
+Top-3 no desenho completo: 96,8%; macro-F1: 0,868. Cada janela usa somente
+os eventos disponíveis até o instante de corte. "Todos" inclui desenhos que
+já terminaram; o outro grupo evita confundir isso com reconhecimento precoce.
+
+A versão anterior tinha seis categorias e outra avaliação. Seus 89,4% não são
+diretamente comparáveis com este problema de doze classes e teste novo.
+
+## Continuações: extensão experimental
 
 - **Com referência do treino:** adapta a continuação de um exemplo conhecido.
-  Pode encaixar mal ou escolher uma forma diferente da intenção do usuário.
-- **Geração livre da GRU:** amostra novos deslocamentos e estados da caneta.
-  É experimental e ainda produz figuras deformadas com frequência.
+  Pode encaixar mal ou sugerir uma forma diferente da intenção do usuário.
+- **Geração livre da GRU:** amostra movimentos e estados da caneta; pode deformar
+  desenhos e acumular erros. Ela não prevê durações futuras: o relógio realimentado
+  usa o intervalo mediano positivo observado no prefixo.
 
-O relatório completo está em [dist/relatorio.pdf](dist/relatorio.pdf).
-Os desenhos feitos na interface não são enviados ao servidor.
+As métricas acima medem reconhecimento, não a qualidade das continuações.
+O modo por referência e a geração livre são identificados separadamente.
 
-## Abrir localmente
+## Abrir e verificar localmente
 
 ```bash
 python3 -m http.server 8765 --bind 127.0.0.1 --directory dist
 ```
 
 Abra http://127.0.0.1:8765. Use HTTP; abrir `index.html` diretamente pode bloquear
-os módulos JavaScript e o carregamento dos pesos.
+os módulos e o carregamento dos pesos.
 
-## Verificar
-
-Requer Node.js 20 ou mais recente. Não há dependências npm para instalar.
+Com Node.js 20 ou mais recente, sem dependências npm para instalar:
 
 ```bash
 node scripts/check-site.mjs
 ```
 
-A verificação confere recursos relativos, pesos, biblioteca, PDF e uma inferência
-real. O site funciona também sob o prefixo `/traco-futuro/` do Pages de projeto.
+A verificação confere recursos relativos, pesos, relógios, referências, PDF e
+uma inferência real. Os arquivos funcionam sob o prefixo `/traco-futuro/`.
 
-## Publicar no GitHub Pages
+## Publicar
 
-Em **Settings → Pages → Build and deployment → Source**, selecione **GitHub Actions**.
-Faça push em `main` ou execute manualmente **Actions → Publicar Traço Futuro → Run workflow**.
-O workflow verifica o aplicativo e publica somente `dist/`, incluindo o PDF.
-Ele não treina modelos, não instala pacotes npm e não usa secrets personalizados.
-A publicação usa as permissões padrão `pages: write` e `id-token: write`.
+O workflow publica somente `dist/` a cada push em `main`. Não há instalação npm
+ou treinamento no deploy. Em **Settings → Pages → Source**, use **GitHub Actions**.
+Também é possível executar **Actions → Publicar Traço Futuro → Run workflow**.
 
-Este repositório contém o aplicativo e os artefatos exportados. O protocolo de
-preparação e treinamento está descrito no relatório. As referências são do treino,
-e os exemplos de demonstração são do teste.
+Este repositório contém o aplicativo e os artefatos exportados. O relatório explica
+preparação, treinamento, inicialização a partir da versão anterior e limites do
+estudo. O novo teste não compartilha IDs ou hashes de geometria com desenhos usados
+na versão anterior; os IDs do antigo teste também foram excluídos de todo o treino
+novo. As referências pertencem somente ao treino.
 
-## Dados
-
-Google Quick, Draw!, licença CC BY 4.0. Veja [DATA_ATTRIBUTION.md](DATA_ATTRIBUTION.md).
+Dados: Google Quick, Draw!, CC BY 4.0. Veja [DATA_ATTRIBUTION.md](DATA_ATTRIBUTION.md).
 A implementação não reproduz o Sketch-RNN.

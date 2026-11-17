@@ -23,10 +23,11 @@ export function completeReference(model,library,tokens,label,{seed=0,temperature
   }
   ranked.sort((a,b)=>a.score-b.score);if(!ranked.length)throw Error('Não há referências disponíveis para esta categoria.');
   const options=ranked.slice(0,5).filter(r=>r.score<=ranked[0].score+.04+temperature*.08),choice=options[(seed>>>0)%options.length];
-  const {drawing,prefix,fit}=choice,origin=drawing.points[prefix.length-1],last=tokens.at(-1),result=[];let previous=[...last.slice(3,5)];
+  const {drawing,prefix,fit}=choice,origin=drawing.points[prefix.length-1],last=tokens.at(-1),result=[];let previous=[...last.slice(3,5)],previousTime=origin[3]??0;
   for(const p of drawing.points.slice(prefix.length)){
     const dx=p[0]-origin[0],dy=p[1]-origin[1],position=[last[3]+fit.scale*(fit.c*dx-fit.s*dy)/model.scale,last[4]+fit.scale*(fit.s*dx+fit.c*dy)/model.scale];
-    result.push([position[0]-previous[0],position[1]-previous[1],p[2],...position]);previous=position;
+    const interval=Math.max(0,(p[3]??previousTime)-previousTime);
+    result.push([position[0]-previous[0],position[1]-previous[1],p[2],...position,...(model.input_size===6?[Math.log1p(interval/(model.time_scale??1))]:[])]);previous=position;previousTime=p[3]??previousTime;
   }
   return {tokens:result,source_id:drawing.id,score:choice.score};
 }
